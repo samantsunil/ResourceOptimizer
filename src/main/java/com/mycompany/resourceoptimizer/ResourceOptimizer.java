@@ -57,8 +57,8 @@ public class ResourceOptimizer {
     static FileWriter processingRA = null;
     static FileWriter storageRA = null;
 
-    public static int[] read() throws IOException {
-        File inputWorkbook = new File("D:\\dpp.xls");
+    public static int[] read(String path) throws IOException {
+        File inputWorkbook = new File(path);
         Workbook w;
         int[] dataArr = null;
         try {
@@ -69,6 +69,26 @@ public class ResourceOptimizer {
                 for (int i = 0; i < sheet.getRows(); i++) {
                     Cell cell = sheet.getCell(j, i);
                     dataArr[i] = Integer.parseInt(cell.getContents());
+                }
+            }
+        } catch (BiffException e) {
+        }
+        
+        return dataArr;
+    }
+
+    public static Float[] readPrice(String path) throws IOException {
+        File inputWorkbook = new File(path);
+        Workbook w;
+        Float[] dataArr = null;
+        try {
+            w = Workbook.getWorkbook(inputWorkbook);
+            Sheet sheet = w.getSheet(0);
+            dataArr = new Float[sheet.getRows()];
+            for (int j = 0; j < sheet.getColumns(); j++) {
+                for (int i = 0; i < sheet.getRows(); i++) {
+                    Cell cell = sheet.getCell(j, i);
+                    dataArr[i] = Float.parseFloat(cell.getContents());
                 }
             }
         } catch (BiffException e) {
@@ -94,14 +114,12 @@ public class ResourceOptimizer {
             return true;
         } else if (resourceAllocation.get("m2.medium") > 0) {
             return true;
-        } else if (resourceAllocation.get("m2.large") > 0) {
-            return true;
         } else {
-            return false;
+            return resourceAllocation.get("m2.large") > 0;
         }
     }
 
-    public static float DCOHomogeneous(int w1, int w2, int w3, int e2eQoS, int deltaA, int deltaB, Float[] price, boolean init, boolean ingSO, boolean ingSI, boolean proSO, boolean proSI, boolean stoSO, boolean stoSI) {
+    public static float DCOHomogeneous(int w1, int w2, int w3, int e2eQoS, int delta_A, int delta_B, Float[] price, boolean init, boolean ingSO, boolean ingSI, boolean proSO, boolean proSI, boolean stoSO, boolean stoSI) {
         @SuppressWarnings("UnusedAssignment")
         float total_cost = 0.0F;
 
@@ -141,9 +159,8 @@ public class ResourceOptimizer {
             int[][] S3_W = new int[][]{{1000, 5000, 10000}, {0, 0, 0}};
             int[][] S3_Q = new int[][]{{2, 20, 260}, {10000, 10000, 10000}};
              */
-            int delta_A = deltaA;//GetPropertyFileKeyValues.getDeltaMinAQoS(); //based on the minimum latency required in layer 2
-            int delta_B = deltaB;//GetPropertyFileKeyValues.getDeltaMinBQoS(); //based on minimum latency required in layer 3
-
+            //int delta_A = deltaA;//GetPropertyFileKeyValues.getDeltaMinAQoS(); //based on the minimum latency required in layer 2
+            //int delta_B = deltaB;//GetPropertyFileKeyValues.getDeltaMinBQoS(); //based on minimum latency required in layer 3
             int aggQoS = delta_A + delta_B;
             List<String> soln = new ArrayList<>();
             List<Float> totCost = new ArrayList<>();
@@ -909,8 +926,9 @@ public class ResourceOptimizer {
         }
 
     }
+    //DCO strategy - includes resource and contract heterogeneity
 
-    public static float DCOStratgey(int w1, int w2, int w3, int e2eQoS, int deltaA, int deltaB, Float[] price, boolean init, boolean ingSO, boolean ingSI, boolean proSO, boolean proSI, boolean stoSO, boolean stoSI) throws IOException {
+    public static float DCOStratgey(int w1, int w2, int w3, int e2eQoS, int delta_A, int delta_B, Float[] price, boolean init, boolean ingSO, boolean ingSI, boolean proSO, boolean proSI, boolean stoSO, boolean stoSI) throws IOException {
         @SuppressWarnings("UnusedAssignment")
         float total_cost = 0.0F;
 
@@ -939,8 +957,8 @@ public class ResourceOptimizer {
             int[][] S3_Q = new int[][]{{2, 20, 260, 5000, 5000, 5000, 5000},
             {1, 2, 6, 40, 140, 5000, 5000},
             {1, 1, 2, 4, 9, 25, 120}};
-            int delta_A = deltaA;//GetPropertyFileKeyValues.getDeltaMinAQoS(); //based on the minimum latency required in layer 2
-            int delta_B = deltaB;//GetPropertyFileKeyValues.getDeltaMinBQoS(); //based on minimum latency required in layer 3
+            //int delta_A = deltaA;//GetPropertyFileKeyValues.getDeltaMinAQoS(); //based on the minimum latency required in layer 2
+            //int delta_B = deltaB;//GetPropertyFileKeyValues.getDeltaMinBQoS(); //based on minimum latency required in layer 3
 
             int aggQoS = delta_A + delta_B;
             List<String> soln = new ArrayList<>();
@@ -1079,7 +1097,7 @@ public class ResourceOptimizer {
                             insertCurrentRACSV(ingestion_resources, ingestionRA);
                         } else {
                             if (ingSI) {
-                                if (!(current_capacity_ingestion == capacityS1[0])) {
+                                if (current_capacity_ingestion > capacityS1[0]) {
                                     if (instS1[0].indexOf(',') != -1) {
                                         String[] extStr = instS1[0].split(",");
                                         for (String dt : extStr) {
@@ -1148,7 +1166,7 @@ public class ResourceOptimizer {
                                         String[] split = instS1[0].split("x");
                                         if (ingestion_resources.get(split[1]) == Integer.parseInt(split[0])) {
                                             ingestion_resources.put(split[1], ingestion_resources.get(split[1]) - Integer.parseInt(split[0]));
-                                            if (checkForEmptyAllocation(ingestion_resources)) {
+                                            if (checkForEmptyAllocation(ingestion_resources)) { //to check if other instances are present in the cluster
 
                                                 current_capacity_ingestion = current_capacity_ingestion - capacityS1[0];
 
@@ -1163,7 +1181,7 @@ public class ResourceOptimizer {
                                                 }
                                                 insertCurrentRACSV(ingestion_resources, ingestionRA);
 
-                                            } else {
+                                            } else { //if only one instance of same type present the scale-in is disabled and next allocation remains same as the current
                                                 ingestion_resources.put(split[1], ingestion_resources.get(split[1]) + Integer.parseInt(split[0]));
                                                 if (ingestion_resources.get("m2.small") > 0) {
                                                     previous_Period_total_cost = previous_Period_total_cost + price[0] * ingestion_resources.get("m2.small");
@@ -1374,7 +1392,7 @@ public class ResourceOptimizer {
                         } // total_cost = total_cost + costS1[0];
                         else {
                             if (proSI) {
-                                if (!(current_capacity_processing == capacityS2[0])) {
+                                if (current_capacity_processing > capacityS2[0]) {
                                     if (instS2[0].indexOf(',') != -1) {
                                         String[] extStr = instS2[0].split(",");
                                         for (String dt : extStr) {
@@ -1484,7 +1502,7 @@ public class ResourceOptimizer {
                                             }
                                             insertCurrentRACSV(processing_resources, processingRA);
 
-                                        } else {
+                                        } else { // if scale-in instance type differs from current instance type then allocation remains same.
                                             if (processing_resources.get("m2.small") > 0) {
                                                 previous_Period_total_cost = previous_Period_total_cost + price[0] * processing_resources.get("m2.small");
                                             }
@@ -1666,7 +1684,7 @@ public class ResourceOptimizer {
                         } // total_cost = total_cost + costS1[0];
                         else {
                             if (stoSI) {
-                                if (!(current_capacity_storage == capacityS3[0])) {
+                                if (current_capacity_storage > capacityS3[0]) {
                                     if (instS3[0].indexOf(',') != -1) {
                                         String[] extStr = instS3[0].split(",");
                                         for (String dt : extStr) {
@@ -1746,7 +1764,7 @@ public class ResourceOptimizer {
                                                 }
                                                 insertCurrentRACSV(storage_resources, storageRA);
 
-                                            } else {
+                                            } else {//instance to remove and current instance are same (no and type) so no change in allocation.
                                                 storage_resources.put(split[1], storage_resources.get(split[1]) + Integer.parseInt(split[0]));
                                                 if (storage_resources.get("m2.small") > 0) {
                                                     previous_Period_total_cost = previous_Period_total_cost + price[0] * storage_resources.get("m2.small");
@@ -1843,7 +1861,6 @@ public class ResourceOptimizer {
             System.out.println("total end-to-end QoS: " + String.valueOf(aggQoS));
             System.out.println("Total cost: " + String.valueOf(previous_Period_total_cost));
 
-
         } catch (NumberFormatException ex) {
             System.out.println("Error:" + ex.getMessage());
 
@@ -1858,13 +1875,15 @@ public class ResourceOptimizer {
     }
 
     public static void main(String args[]) throws IOException {
-        Float[] price = {0.0385F, 0.0928F, 0.1856F}; //OD
+        //Float[] price = {0.0385F, 0.0928F, 0.1856F}; //OD Ohio
+        Float[] price = new Float[3]; // {0.048F, 0.1168F, 0.2336F}; //OD  Sydney
         float totalCost = 0.0F;
-        //Float[] price = {0.032F, 0.065F, 0.13F}; //SB - 6hrs
-        // Float[] price = {0.032F, 0.0928F, 0.1856F}; //mixed - first spot block, 2 -ODs
-        //Float[] price = {0.032F, 0.065F, 0.1856F}; // mixed - 2 SB , 1 OD
-        // Float[] price = {0.0385F, 0.065F, 0.13F}; //mixed - 1OD, 2 SB
-        //Float[] price = {0.0385F, 0.0928F}; //OD - homogeneous across all layers
+        //Float[] price = {0.032F, 0.065F, 0.13F}; //SB - 6hrs  Ohio
+        //Float[] price = {0.019F, 0.035F, 0.0701F}; //Spot Sydeny
+        // Float[] price = {0.048F, 0.1168F, 0.2336F}; //mixed - first spot, 2 -ODs
+        //Float[] price = {0.019F, 0.035F, 0.0701F}; // mixed - 2 Spots , 1 OD
+        // Float[] price = {0.048F, 0.035F, 0.0701F}; //mixed - 1OD, 2 SB
+        //Float[] price = {0.048F, 0.1168F}; //OD - homogeneous across all layers
         ingestion_resources.put("m2.small", 0);
         ingestion_resources.put("m2.medium", 0);
         ingestion_resources.put("m2.large", 0);
@@ -1910,45 +1929,53 @@ public class ResourceOptimizer {
         current_allocation_ingestion = current_allocation_processing = current_allocation_storage = null;
         previous_Period_total_cost = 0.0F;
         boolean ingSO, ingSI, proSO, proSI, stoSO, stoSI;
-        int[] workloads = read(); //read workload data from excel file - 31 days NYC taxi data.
+
+        int[] workloads = read("D:\\dpp.xls"); //read workload data from a file - 31 days NYC taxi data.
+        Float[] mediumInstPrice = readPrice("D:\\m6g_mediumPriceOD.xls"); // m6g_mediumPriceOD , m6g_mediumPriceSpot
+        Float[] largeInstPrice = readPrice("D:\\t2_largePriceOD.xls");// t2_largePriceOD , t2_largePriceSpot
+        Float[] xlargeInstPrice = readPrice("D:\\t2_xlargePriceOD.xls"); // t2_xlargePriceOD, t2_xlargePriceSpot
         int w1, w2, w3;
         System.out.println("Select stratgey:(DCO/FCO)");
         String strategy = scanner.next();
+        System.out.println("Resource homogeneity or heterogeneity: (Ho/He)");
+        String option = scanner.next();
         if (null == strategy) {
             System.out.println("Please select an appropriate scaling strategy option:");
         } else {
             switch (strategy) {
                 case "DCO":
-//        for (int i = 0; i < price.length; i++) {
-//            System.out.println("Enter price for instance0" + (i + 1) + ":");
-//            price[i] = scanner.nextFloat();
-//        }
-//        do {
-//
-//            System.out.println("Enter workload for ingestion layer:");
-//            int w1 = scanner.nextInt();
-//            System.out.println("Enter workload for processing layer");
-//            int w2 = scanner.nextInt();
-//            System.out.println("Enter workload for storage layer");
-//            int w3 = scanner.nextInt();
-//            getResourceAllocation(w1, w2, w3, e2eQoS, deltaA, deltaB, price);
-//            //MKPSolver.MKPSolver(w1, w2, w3, e2eQoS, deltaA, deltaB, price);
-//            System.out.println("Do you want to continue?");
-//            choice = scanner.next();
-//        } while ("yes".equals(choice) || "y".equals(choice));
                 case "dco":
                     for (int i = 0; i < workloads.length; i++) {
                         if (i == 0) {
                             w3 = (int) (0.25 * workloads[i]);
-                            DCOStratgey(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price, true, false, false, false, false, false, false);
-                            //DCOHomogeneous(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price, true, false, false, false, false, false, false);
+                            price[0] = mediumInstPrice[i];
+                            price[1] = largeInstPrice[i];
+                            price[2] = xlargeInstPrice[i];
+                            if (null == option) {
+                                System.out.println("Please select appropriate heterogeneity option:");
+                            } else {
+                                switch (option) {
+                                    case "he":
+                                        DCOStratgey(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price, true, false, false, false, false, false, false);
+                                        break;
+                                    case "ho":
+                                        DCOHomogeneous(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price, true, false, false, false, false, false, false);
+                                        break;
+                                    default:
+                                        System.out.println("Please select appropriate heterogeneity option:");
+                                        break;
+                                }
+                            }
                         } else {
+                            price[0] = mediumInstPrice[i];
+                            price[1] = largeInstPrice[i];
+                            price[2] = xlargeInstPrice[i];
                             if (current_capacity_ingestion > workloads[i]) {
-                                ingSI = true;
+                                ingSI = true; //scale-in
                                 ingSO = false;
                                 w1 = current_capacity_ingestion - workloads[i];
                             } else if (current_capacity_ingestion < workloads[i]) {
-                                ingSO = true;
+                                ingSO = true; //scale-out
                                 ingSI = false;
                                 w1 = workloads[i] - current_capacity_ingestion;
                             } else {
@@ -1956,12 +1983,12 @@ public class ResourceOptimizer {
                                 w1 = 0;
                             }
                             if (current_capacity_processing > workloads[i]) {
-                                proSI = true;
+                                proSI = true; //scale-in
                                 proSO = false;
                                 w2 = current_capacity_processing - workloads[i];
 
                             } else if (current_capacity_processing < workloads[i]) {
-                                proSO = true;
+                                proSO = true; //scale-out
                                 proSI = false;
                                 w2 = workloads[i] - current_capacity_processing;
                             } else {
@@ -1981,31 +2008,65 @@ public class ResourceOptimizer {
                                 stoSO = stoSI = false;
                                 w3 = 0;
                             }
-                            DCOStratgey(w1, w2, w3, e2eQoS, deltaA, deltaB, price, false, ingSO, ingSI, proSO, proSI, stoSO, stoSI);
-                            //DCOHomogeneous(w1, w2, w3, e2eQoS, deltaA, deltaB, price, false, ingSO, ingSI, proSO, proSI, stoSO, stoSI);
+                            if (null == option) {
+                                System.out.println("Please select appropriate heterogeneity option:");
+                            } else {
+                                switch (option) {
+                                    case "he":
+                                        DCOStratgey(w1, w2, w3, e2eQoS, deltaA, deltaB, price, false, ingSO, ingSI, proSO, proSI, stoSO, stoSI);
+                                        break;
+                                    case "ho":
+                                        DCOHomogeneous(w1, w2, w3, e2eQoS, deltaA, deltaB, price, false, ingSO, ingSI, proSO, proSI, stoSO, stoSI);
+                                        break;
+                                    default:
+                                        System.out.println("Please select appropriate heterogeneity option:");
+                                        break;
+                                }
+                            }
                         }
                     }
                     System.out.println("Total cost of RA using DCO:" + previous_Period_total_cost);
                     break;
                 case "FCO":
                 case "fco":
+                    long startTime = System.currentTimeMillis();
                     for (int i = 0; i < workloads.length; i++) {
                         w3 = (int) (0.25 * workloads[i]);
-                        totalCost = totalCost + HeterogeneousFCO.FCOStrategy(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price);
-                        //totalCost = totalCost + Homogeneous.HomogeneousFCO(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price);
+                        price[0] = mediumInstPrice[i];
+                        price[1] = largeInstPrice[i];
+                        price[2] = xlargeInstPrice[i];
+                        if (null == option) {
+                            System.out.println("Please select appropriate heterogeneity option:");
+                        } else {
+                            switch (option) {
+                                case "he":
+                                    totalCost = totalCost + HeterogeneousFCO.FCOStrategy(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price);
+                                    break;
+                                case "ho":
+                                    totalCost = totalCost + Homogeneous.HomogeneousFCO(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price);
+                                    break;
+                                default:
+                                    System.out.println("Please select appropriate heterogeneity option:");
+                                    break;
+                            }
+                        }
+
                     }
+                    long endTime = System.currentTimeMillis();
+                    System.out.println("Total time taken to find cost-optimal solution(ms):" + (endTime - startTime) + "");
                     System.out.println("Total cost of RA using FCO:" + totalCost);
+                    //System.out.println("Total time taken to find cost-optimal solution(ms): " + duration);
                     break;
                 default:
                     System.out.println("Please select an appropriate scaling strategy option:");
                     break;
             }
         }
-            ingestionRA.flush();
-            ingestionRA.close();
-            processingRA.flush();
-            processingRA.close();
-            storageRA.flush();
-            storageRA.close();
+        ingestionRA.flush();
+        ingestionRA.close();
+        processingRA.flush();
+        processingRA.close();
+        storageRA.flush();
+        storageRA.close();
     }
 }

@@ -5,8 +5,13 @@
  */
 package com.mycompany.resourceoptimizer;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -17,47 +22,34 @@ public class HeterogeneousFCO {
     public HeterogeneousFCO() {
 
     }
+     public static void insertCurrentRACSV(Map<String, Integer> dataDict, FileWriter csvFile) {
+        try {
+            csvFile.append(dataDict.get("m2.small").toString());
+            csvFile.append(",");
+            csvFile.append(dataDict.get("m2.medium").toString());
+            csvFile.append(",");
+            csvFile.append(dataDict.get("m2.large").toString());
+            csvFile.append("\n");
+        } catch (IOException ex) {
+            Logger.getLogger(ResourceOptimizer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
-    public static float FCOStrategy(int w1, int w2, int w3, int e2eQoS, int deltaA, int deltaB, Float[] price) {
+    public static float FCOStrategy(int w1, int w2, int w3, int e2eQoS, int delta_A, int delta_B, Float[] price) {
         @SuppressWarnings("UnusedAssignment")
         float total_cost = 0.0F;
         try {
-            // int[][] S1_W = new int[][]{{1, 10, 30, 31, 31, 31}, {1, 10, 30, 50, 51, 51}, {1, 10, 30, 50, 80, 90}}; //aws - t2- micro, small, medium
-           // int[][] S1_W = new int[][]{{1000, 5000, 10000, 20000, 30000},
-            //{1000, 5000, 10000, 20000, 30000},
-            //{1000, 5000, 10000, 20000, 30000}};
-            //{0, 0, 0, 0, 0}};
-            //{0, 0, 0, 0, 0}};
-            //int[][] S2_W = new int[][]{{1, 2, 3, 4, 5, 5}, {1, 2, 3, 4, 5, 5}, {1, 2, 3, 4, 5, 6}};
-//            int[][] S2_W = new int[][]{{1000, 5000, 10000, 20000, 30000, 40000, 50000, 50001, 50001, 50001, 50001, 50001},
-//           {1000, 5000, 10000, 20000, 30000, 40000, 50000, 60000, 60001, 60001, 60001, 60001},
-//           {1000, 5000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000}};
-            //int[][] S2_W = new int[][]{{1000, 5000, 10000, 20000, 30000, 40000, 50000}, {0, 0, 0, 0, 0, 0, 0}};
-            // int[][] S3_W = new int[][]{{1, 5, 10, 15, 18, 19, 19}, {1, 5, 10, 15, 18, 19, 19}, {1, 5, 10, 15, 20, 25, 30}};
-//            int[][] S3_W = new int[][]{{1000, 5000, 10000, 10001, 10001, 10001, 10001},
-//            {1000, 5000, 10000, 20000, 30000, 30001, 30001},
-//            {1000, 5000, 10000, 20000, 30000, 40000, 50000}};
-            //int[][] S3_W = new int[][]{{1000, 5000, 10000}, {0, 0, 0}};
-            //int[][] S1_Q = new int[][]{{73, 75, 79, 5000, 5000, 5000}, {28, 35, 44, 45, 5000, 5000}, {16, 25, 31, 33, 52, 60}};
-//            int[][] S1_Q = new int[][]{{8, 11, 14, 22, 29},
-//            {7, 9, 10, 13, 18},
-//            {5, 7, 8, 10, 12}};
-           // int[][] S1_Q = new int[][]{{8, 11, 14, 22, 29}, {10000, 10000, 10000, 10000, 10000}};
-            //int[][] S2_Q = new int[][]{{300, 400, 700, 900, 5000, 5000}, {300, 400, 700, 900, 5000, 5000}, {200, 400, 700, 800, 850, 900}};
-//            int[][] S2_Q = new int[][]{{45, 90, 200, 400, 600, 800, 900, 5000, 5000, 5000, 5000, 5000},
-//            {30, 60, 200, 400, 500, 600, 800, 900, 5000, 5000, 5000, 5000},
-//            {25, 50, 100, 200, 250, 350, 450, 500, 600, 700, 800, 900}};
-           // int[][] S2_Q = new int[][]{{45, 90, 200, 400, 600, 800, 900}, {10000, 10000, 10000, 10000, 10000, 10000, 10000}};
-            //int[][] S3_Q = new int[][]{{15, 17, 20, 25, 51, 5000, 5000}, {15, 16, 18, 25, 35, 5000, 5000}, {15, 15, 16, 17, 20, 25, 40}};
-//            int[][] S3_Q = new int[][]{{2, 20, 260, 5000, 5000, 5000, 5000},
-//            {1, 2, 6, 40, 140, 5000, 5000},
-//            {1, 1, 2, 4, 9, 25, 120}};
-           // int[][] S3_Q = new int[][]{{2, 20, 260}, {10000, 10000, 10000}};
-            //Float[] price = new Float[]{0.0146F, 0.0292F, 0.0584F}; //on-demand t2.micro, t2.small and t2.medium price in USD/hr
-            // Float[] price = new Float[]{0.0292F, 0.0584F, 0.2336F};
-            /*
-              Sustainable QoS profile - AWS and NeCTAR
-            */
+
+            /*            
+            //homogeneous across all layers..
+            int[][] S1_W = new int[][]{{1000, 5000, 10000, 20000, 30000},
+                                                {0, 0, 0, 0, 0}};
+            int[][] S2_W = new int[][]{{1000, 5000, 10000, 20000, 30000, 40000, 50000}, {0, 0, 0, 0, 0, 0, 0}};
+            int[][] S3_W = new int[][]{{1000, 5000, 10000}, {0, 0, 0}};
+            int[][] S1_Q = new int[][]{{8, 11, 14, 22, 29}, {10000, 10000, 10000, 10000, 10000}};
+            int[][] S2_Q = new int[][]{{45, 90, 200, 400, 600, 800, 900}, {10000, 10000, 10000, 10000, 10000, 10000, 10000}};
+            int[][] S3_Q = new int[][]{{2, 20, 260}, {10000, 10000, 10000}};
+             */
             // int[][] S1_W = new int[][]{{1, 10, 30, 31, 31, 31}, {1, 10, 30, 50, 51, 51}, {1, 10, 30, 50, 80, 90}}; //aws - t2- micro, small, medium
             int[][] S1_W = new int[][]{{1000, 5000, 10000, 20000, 30000},
             {1000, 5000, 10000, 20000, 30000},
@@ -82,8 +74,8 @@ public class HeterogeneousFCO {
             int[][] S3_Q = new int[][]{{2, 20, 260, 5000, 5000, 5000, 5000},
             {1, 2, 6, 40, 140, 5000, 5000},
             {1, 1, 2, 4, 9, 25, 120}};
-            int delta_A = deltaA;//GetPropertyFileKeyValues.getDeltaMinAQoS(); //based on the minimum latency required in layer 2
-            int delta_B = deltaB;//GetPropertyFileKeyValues.getDeltaMinBQoS(); //based on minimum latency required in layer 3
+            //int delta_A = deltaA;//GetPropertyFileKeyValues.getDeltaMinAQoS(); //based on the minimum latency required in layer 2
+            //int delta_B = deltaB;//GetPropertyFileKeyValues.getDeltaMinBQoS(); //based on minimum latency required in layer 3
 
             int aggQoS = delta_A + delta_B;
             List<String> soln = new ArrayList<>();
@@ -162,7 +154,7 @@ public class HeterogeneousFCO {
                                         soln.add(String.valueOf(x) + "x" + inst_type1 + "," + String.valueOf(y) + "x" + inst_type2);
                                         totCost.add(x * price[0] + y * price[i + 1]);
                                         qos.add(Math.max(S1_Q[0][kk], S1_Q[i + 1][j + 1]));
-                                       // totCapacity.add((x * S1_W[0][kk]) + (y * S1_W[i + 1][j + 1]));
+                                        // totCapacity.add((x * S1_W[0][kk]) + (y * S1_W[i + 1][j + 1]));
                                     }
                                 }
                             }
@@ -202,7 +194,8 @@ public class HeterogeneousFCO {
                             nextQoS = qosS1[1];
                         }
                         // MainForm.txtAreaIngestionResources.append("Instances required for ingestion layer: " + instS1[0] + "\n");
-                        System.out.println("Instances required for Kafka: " + instS1[0] + "\n");
+                        //System.out.print("Kafka: " + instS1[0] + ", ");
+                        
 
                         break;
                     }
@@ -239,7 +232,7 @@ public class HeterogeneousFCO {
                             }
                         }
                         //new code - heterogeneity
-                         String inst_type1 = null;
+                        String inst_type1 = null;
                         String inst_type2 = null;
                         int kk = 0;
                         while (kk < S2_W[0].length - 1) {
@@ -270,7 +263,7 @@ public class HeterogeneousFCO {
                                         soln2.add(String.valueOf(x) + "x" + inst_type1 + "," + String.valueOf(y) + "x" + inst_type2);
                                         totCost2.add(x * price[0] + y * price[i + 1]);
                                         qos2.add(Math.max(S2_Q[0][kk], S2_Q[i + 1][j + 1]));
-                                       // totCapacity2.add((x * S2_W[0][kk]) + (y * S2_W[i + 1][j + 1]));
+                                        // totCapacity2.add((x * S2_W[0][kk]) + (y * S2_W[i + 1][j + 1]));
                                     }
                                 }
                             }
@@ -303,7 +296,8 @@ public class HeterogeneousFCO {
                         }
                         aggQoS = aggQoS + qosS2[0];
                         total_cost = total_cost + costS2[0];
-                        System.out.println("Instances required for processing layer: " + instS2[0] + "\n");
+                        //System.out.println("spark: " + instS2[0] + "");
+                        System.out.println(instS2[0]);
                         break;
                     }
                     case 3: {
@@ -339,7 +333,7 @@ public class HeterogeneousFCO {
                             }
                         }
                         //new code - heterogeneity
-                         String inst_type1 = null;
+                        String inst_type1 = null;
                         String inst_type2 = null;
                         int kk = 0;
                         while (kk < S3_W[0].length - 1) {
@@ -404,7 +398,7 @@ public class HeterogeneousFCO {
                         aggQoS = aggQoS + qosS3[0];
                         total_cost = total_cost + costS3[0];
 
-                        System.out.println("Instances required for storage layer: " + instS3[0] + "\n");
+                        //System.out.println("cassandra: " + instS3[0] + "");
                         //System.out.print(instS3[0] + '\t');
                         // String[] split = instS3[0].split("X");
 
@@ -417,13 +411,10 @@ public class HeterogeneousFCO {
                 }
 
             }
-            System.out.println("Total cost: " + String.valueOf(total_cost));
-            System.out.println("total end-to-end QoS: " + String.valueOf(aggQoS));
-
-          
+           // System.out.println("Total cost: " + String.valueOf(total_cost));
+           // System.out.println("total end-to-end QoS: " + String.valueOf(aggQoS));
 
         } catch (NumberFormatException ex) {
-            
 
         }
         return total_cost;
