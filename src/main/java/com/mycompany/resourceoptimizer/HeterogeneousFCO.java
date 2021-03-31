@@ -297,7 +297,7 @@ public class HeterogeneousFCO {
                         aggQoS = aggQoS + qosS2[0];
                         total_cost = total_cost + costS2[0];
                         //System.out.println("spark: " + instS2[0] + "");
-                        System.out.println(instS2[0]);
+                        //System.out.println(instS2[0]);
                         break;
                     }
                     case 3: {
@@ -398,7 +398,7 @@ public class HeterogeneousFCO {
                         aggQoS = aggQoS + qosS3[0];
                         total_cost = total_cost + costS3[0];
 
-                        //System.out.println("cassandra: " + instS3[0] + "");
+                        System.out.println(instS3[0]);
                         //System.out.print(instS3[0] + '\t');
                         // String[] split = instS3[0].split("X");
 

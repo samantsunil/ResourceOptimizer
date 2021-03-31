@@ -1876,9 +1876,10 @@ public class ResourceOptimizer {
 
     public static void main(String args[]) throws IOException {
         //Float[] price = {0.0385F, 0.0928F, 0.1856F}; //OD Ohio
-        Float[] price = new Float[3]; // {0.048F, 0.1168F, 0.2336F}; //OD  Sydney
+        //Float[] price = new Float[3]; // {0.048F, 0.1168F, 0.2336F}; //OD  Sydney
         float totalCost = 0.0F;
-        //Float[] price = {0.032F, 0.065F, 0.13F}; //SB - 6hrs  Ohio
+        //Float[] price = {0.048F, 0.1168F, 0.2336F}; //OD  Sydney
+        Float[] price = {0.019F, 0.025F, 0.030F}; //SB - 6hrs  Ohio
         //Float[] price = {0.019F, 0.035F, 0.0701F}; //Spot Sydeny
         // Float[] price = {0.048F, 0.1168F, 0.2336F}; //mixed - first spot, 2 -ODs
         //Float[] price = {0.019F, 0.035F, 0.0701F}; // mixed - 2 Spots , 1 OD
@@ -1929,12 +1930,13 @@ public class ResourceOptimizer {
         current_allocation_ingestion = current_allocation_processing = current_allocation_storage = null;
         previous_Period_total_cost = 0.0F;
         boolean ingSO, ingSI, proSO, proSI, stoSO, stoSI;
-
+          //int[] workloads = {10000, 10000, 7500};
         int[] workloads = read("D:\\dpp.xls"); //read workload data from a file - 31 days NYC taxi data.
-        Float[] mediumInstPrice = readPrice("D:\\m6g_mediumPriceOD.xls"); // m6g_mediumPriceOD , m6g_mediumPriceSpot
-        Float[] largeInstPrice = readPrice("D:\\t2_largePriceOD.xls");// t2_largePriceOD , t2_largePriceSpot
-        Float[] xlargeInstPrice = readPrice("D:\\t2_xlargePriceOD.xls"); // t2_xlargePriceOD, t2_xlargePriceSpot
+        //Float[] mediumInstPrice = readPrice("D:\\m6g_mediumPriceOD.xls"); // m6g_mediumPriceOD , m6g_mediumPriceSpot
+        //Float[] largeInstPrice = readPrice("D:\\t2_largePriceOD.xls");// t2_largePriceOD , t2_largePriceSpot
+        //Float[] xlargeInstPrice = readPrice("D:\\t2_xlargePriceOD.xls"); // t2_xlargePriceOD, t2_xlargePriceSpot
         int w1, w2, w3;
+        String resource_heterogeneity = null;
         System.out.println("Select stratgey:(DCO/FCO)");
         String strategy = scanner.next();
         System.out.println("Resource homogeneity or heterogeneity: (Ho/He)");
@@ -1948,9 +1950,9 @@ public class ResourceOptimizer {
                     for (int i = 0; i < workloads.length; i++) {
                         if (i == 0) {
                             w3 = (int) (0.25 * workloads[i]);
-                            price[0] = mediumInstPrice[i];
-                            price[1] = largeInstPrice[i];
-                            price[2] = xlargeInstPrice[i];
+                           // price[0] = mediumInstPrice[i];
+                           // price[1] = largeInstPrice[i];
+                            //price[2] = xlargeInstPrice[i];
                             if (null == option) {
                                 System.out.println("Please select appropriate heterogeneity option:");
                             } else {
@@ -1967,9 +1969,9 @@ public class ResourceOptimizer {
                                 }
                             }
                         } else {
-                            price[0] = mediumInstPrice[i];
-                            price[1] = largeInstPrice[i];
-                            price[2] = xlargeInstPrice[i];
+                            //price[0] = mediumInstPrice[i];
+                            //price[1] = largeInstPrice[i];
+                            //price[2] = xlargeInstPrice[i];
                             if (current_capacity_ingestion > workloads[i]) {
                                 ingSI = true; //scale-in
                                 ingSO = false;
@@ -2032,17 +2034,19 @@ public class ResourceOptimizer {
                     long startTime = System.currentTimeMillis();
                     for (int i = 0; i < workloads.length; i++) {
                         w3 = (int) (0.25 * workloads[i]);
-                        price[0] = mediumInstPrice[i];
-                        price[1] = largeInstPrice[i];
-                        price[2] = xlargeInstPrice[i];
+                        //price[0] = mediumInstPrice[i];
+                        //price[1] = largeInstPrice[i];
+                        //price[2] = xlargeInstPrice[i];
                         if (null == option) {
                             System.out.println("Please select appropriate heterogeneity option:");
                         } else {
                             switch (option) {
                                 case "he":
+                                    resource_heterogeneity = "heterogeneous";
                                     totalCost = totalCost + HeterogeneousFCO.FCOStrategy(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price);
                                     break;
                                 case "ho":
+                                    resource_heterogeneity = "homogeneous";
                                     totalCost = totalCost + Homogeneous.HomogeneousFCO(workloads[i], workloads[i], w3, e2eQoS, deltaA, deltaB, price);
                                     break;
                                 default:
@@ -2054,7 +2058,7 @@ public class ResourceOptimizer {
                     }
                     long endTime = System.currentTimeMillis();
                     System.out.println("Total time taken to find cost-optimal solution(ms):" + (endTime - startTime) + "");
-                    System.out.println("Total cost of RA using FCO:" + totalCost);
+                    System.out.println("Total cost of RA using FCO with " + resource_heterogeneity + " is :" + totalCost);
                     //System.out.println("Total time taken to find cost-optimal solution(ms): " + duration);
                     break;
                 default:
